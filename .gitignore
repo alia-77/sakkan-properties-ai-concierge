@@ -10,6 +10,7 @@ outputs/trace_logs.jsonl
 outputs/eval_report.json
 
 .chainlit/
+chainlit.md
 docs/
 
 *.log
