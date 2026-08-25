@@ -1,0 +1,8 @@
+Client ID: hassan
+Name: Hassan
+Budget: 3000000-5000000 EGP
+Preferred districts: New Cairo
+Family size: 4
+School requirements: international schools
+Timeline: 3 months
+Language preference: Arabic

@@ -1,0 +1,22 @@
+accuracy:
+  no_fabricated_listings: true
+  no_fabricated_prices: true
+  provenance_required: true
+
+language:
+  respectful_arabic: true
+  respectful_english: true
+
+escalation:
+  uncertain_match: disclose_uncertainty
+  missing_data: ask_broker
+
+privacy:
+  client_scope_by_id: true
+  never_leak_other_clients: true
+
+memory:
+  consent_required_before_write: true
+  
+human_review:
+  client_facing_messages: mandatory

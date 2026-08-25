@@ -1,0 +1,2 @@
+SOP: offers
+Rule: Offers must identify the listing and proposed amount. Broker approval is required before client communication.

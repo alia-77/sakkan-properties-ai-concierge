@@ -1,0 +1,9 @@
+Listing ID: listing_018
+District: 6th of October
+Type: townhouse
+Bedrooms: 2
+Bathrooms: 2
+Size sqm: 150
+Price EGP: 2,500,000
+Finishing status: Semi-finished
+Description: A practical townhouse in 6th of October with natural light and useful family spaces. The development is close to everyday services and major roads.

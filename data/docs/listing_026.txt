@@ -1,0 +1,9 @@
+Listing ID: listing_026
+District: New Cairo
+Type: villa
+Bedrooms: 4
+Bathrooms: 2
+Size sqm: 150
+Price EGP: 2,500,000
+Finishing status: Semi-finished
+Description: A practical villa in New Cairo with natural light and useful family spaces. The development is close to everyday services and major roads.

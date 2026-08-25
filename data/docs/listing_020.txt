@@ -1,0 +1,9 @@
+Listing ID: listing_020
+District: North Coast
+Type: villa
+Bedrooms: 4
+Bathrooms: 2
+Size sqm: 190
+Price EGP: 5,000,000
+Finishing status: Semi-finished
+Description: A practical villa in North Coast with natural light and useful family spaces. The development is close to everyday services and major roads.

@@ -1,0 +1,4 @@
+Bank: Cairo Union Bank
+Rate: 19%
+Maximum tenure: 12 years
+Minimum down payment: 25%

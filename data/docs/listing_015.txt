@@ -1,0 +1,9 @@
+Listing ID: listing_015
+District: North Coast
+Type: townhouse
+Bedrooms: 2
+Bathrooms: 3
+Size sqm: 250
+Price EGP: 2,500,000
+Finishing status: Finished
+Description: A practical townhouse in North Coast with natural light and useful family spaces. The development is close to everyday services and major roads.

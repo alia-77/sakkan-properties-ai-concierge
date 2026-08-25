@@ -1,0 +1,9 @@
+Listing ID: listing_029
+District: Maadi
+Type: villa
+Bedrooms: 4
+Bathrooms: 3
+Size sqm: 210
+Price EGP: 4,000,000
+Finishing status: Finished
+Description: A practical villa in Maadi with natural light and useful family spaces. The development is close to everyday services and major roads.

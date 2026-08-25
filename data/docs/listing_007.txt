@@ -1,0 +1,9 @@
+Listing ID: listing_007
+District: Sheikh Zayed
+Type: apartment
+Bedrooms: 3
+Bathrooms: 3
+Size sqm: 250
+Price EGP: 5,000,000
+Finishing status: Finished
+Description: A practical apartment in Sheikh Zayed with natural light and useful family spaces. The development is close to everyday services and major roads.

@@ -1,0 +1,2 @@
+SOP: communications
+Rule: Client-facing WhatsApp and email drafts require broker approval before release.

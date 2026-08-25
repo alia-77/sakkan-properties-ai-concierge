@@ -1,0 +1,9 @@
+Listing ID: listing_023
+District: 6th of October
+Type: villa
+Bedrooms: 4
+Bathrooms: 3
+Size sqm: 250
+Price EGP: 5,000,000
+Finishing status: Finished
+Description: A practical villa in 6th of October with natural light and useful family spaces. The development is close to everyday services and major roads.

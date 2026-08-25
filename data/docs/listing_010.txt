@@ -1,0 +1,9 @@
+Listing ID: listing_010
+District: North Coast
+Type: apartment
+Bedrooms: 3
+Bathrooms: 2
+Size sqm: 150
+Price EGP: 3,500,000
+Finishing status: Semi-finished
+Description: A practical apartment in North Coast with natural light and useful family spaces. The development is close to everyday services and major roads.

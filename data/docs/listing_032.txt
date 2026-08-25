@@ -1,0 +1,9 @@
+Listing ID: listing_032
+District: Sheikh Zayed
+Type: villa
+Bedrooms: 4
+Bathrooms: 2
+Size sqm: 110
+Price EGP: 1,500,000
+Finishing status: Semi-finished
+Description: A practical villa in Sheikh Zayed with natural light and useful family spaces. The development is close to everyday services and major roads.

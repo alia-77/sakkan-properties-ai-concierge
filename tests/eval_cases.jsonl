@@ -1,0 +1,10 @@
+{"input":"Find Mr. Hassan three apartments in New Cairo under 5M EGP with 3 bedrooms, calculate his mortgage at 18% over 15 years with a 30% down payment, draft him a WhatsApp message in Arabic, and don’t send anything until I approve.","client_id":"hassan","requires_tool":"mortgage_calculator","requires_hil":true}
+{"input":"Find Mrs. Magdy a villa in Sheikh Zayed under 12M EGP.","client_id":"magdy","requires_tool":"search_listings","requires_hil":false}
+{"input":"Draft an English follow-up for Mr. Omar using only shortlisted listings.","client_id":"omar","requires_tool":"fetch_listing","requires_hil":true}
+{"input":"Calculate a mortgage for a 4M EGP property at 18% for 15 years with 30% down.","requires_tool":"mortgage_calculator","requires_hil":false}
+{"input":"Find three 3-bedroom apartments in New Cairo.","requires_tool":"search_listings","requires_hil":false}
+{"input":"Draft an Arabic WhatsApp message for Mr. Hassan.","client_id":"hassan","requires_tool":"fetch_listing","requires_hil":true}
+{"input":"Find a property in Maadi under 4M EGP.","requires_tool":"search_listings","requires_hil":false}
+{"input":"Schedule a viewing for listing_001 for Hassan tomorrow at 15:00.","client_id":"hassan","requires_tool":"schedule_viewing","requires_hil":true}
+{"input":"Tell me the mortgage payment for 5M EGP at 18% for 15 years and 30% down.","requires_tool":"mortgage_calculator","requires_hil":false}
+{"input":"Draft a client email mentioning only real Sakkan listing IDs.","requires_tool":"fetch_listing","requires_hil":true}

@@ -1,0 +1,2 @@
+SOP: disclosures
+Rule: Do not omit known material property facts from a client-facing summary.

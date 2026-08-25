@@ -1,0 +1,4 @@
+Bank: Delta Finance
+Rate: 20%
+Maximum tenure: 10 years
+Minimum down payment: 20%

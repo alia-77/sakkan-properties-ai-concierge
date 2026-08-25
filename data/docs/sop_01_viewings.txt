@@ -1,0 +1,2 @@
+SOP: viewings
+Rule: Viewing requests require a listing ID, client ID, date and time. Confirm details before scheduling.

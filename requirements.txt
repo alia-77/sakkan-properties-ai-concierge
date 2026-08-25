@@ -1,0 +1,12 @@
+chainlit==2.8.0
+langgraph==0.6.6
+langchain-google-genai==2.1.10
+langchain-core==0.3.75
+qdrant-client==1.19.0
+mem0ai==0.1.116
+mcp==1.26.0
+deepeval==3.0.5
+structlog==25.4.0
+pydantic==2.11.7
+python-dotenv==1.1.1
+pyyaml==6.0.2

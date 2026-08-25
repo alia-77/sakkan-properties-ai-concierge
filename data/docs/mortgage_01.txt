@@ -1,0 +1,4 @@
+Bank: Nile Bank
+Rate: 18%
+Maximum tenure: 15 years
+Minimum down payment: 30%

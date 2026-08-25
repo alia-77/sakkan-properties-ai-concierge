@@ -1,0 +1,9 @@
+Listing ID: listing_013
+District: 6th of October
+Type: apartment
+Bedrooms: 3
+Bathrooms: 3
+Size sqm: 210
+Price EGP: 4,000,000
+Finishing status: Finished
+Description: A practical apartment in 6th of October with natural light and useful family spaces. The development is close to everyday services and major roads.

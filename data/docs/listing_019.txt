@@ -1,0 +1,9 @@
+Listing ID: listing_019
+District: Maadi
+Type: apartment
+Bedrooms: 3
+Bathrooms: 3
+Size sqm: 170
+Price EGP: 3,000,000
+Finishing status: Finished
+Description: A practical apartment in Maadi with natural light and useful family spaces. The development is close to everyday services and major roads.

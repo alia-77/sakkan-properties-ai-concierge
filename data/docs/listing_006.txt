@@ -1,0 +1,9 @@
+Listing ID: listing_006
+District: New Cairo
+Type: townhouse
+Bedrooms: 2
+Bathrooms: 2
+Size sqm: 230
+Price EGP: 4,500,000
+Finishing status: Semi-finished
+Description: A practical townhouse in New Cairo with natural light and useful family spaces. The development is close to everyday services and major roads.

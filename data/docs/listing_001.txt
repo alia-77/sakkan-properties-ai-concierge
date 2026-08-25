@@ -1,0 +1,9 @@
+Listing ID: listing_001
+District: New Cairo
+Type: apartment
+Bedrooms: 3
+Bathrooms: 3
+Size sqm: 130
+Price EGP: 2,000,000
+Finishing status: Finished
+Description: A practical apartment in New Cairo with natural light and useful family spaces. The development is close to everyday services and major roads.

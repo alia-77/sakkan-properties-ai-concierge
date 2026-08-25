@@ -1,15 +1,16 @@
-.venv/
 .env
-
+.venv/
 __pycache__/
-*.py[cod]
-.pytest_cache/
+*.pyc
 
-.vscode/
-.idea/
+.qdrant/
+mem0_store/
 
-outputs/*.jsonl
-outputs/*.json
+outputs/trace_logs.jsonl
+outputs/eval_report.json
 
+.chainlit/
+
+*.log
 .DS_Store
 Thumbs.db
