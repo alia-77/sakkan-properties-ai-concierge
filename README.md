@@ -30,17 +30,16 @@ The workflow demonstrates triage, Qdrant retrieval, MCP tools, mortgage analysis
 
 ```text
 src/
-  agents/          Multi-agent workflow
-  orchestrator.py  LangGraph orchestration
-  rag_chain.py     Qdrant retrieval
-  memory.py        Client-scoped memory
-  tools.py         Validated tools
-  hil_gate.py      Broker approval
-  observability.py Trace logging
-
-mcp/               MCP tool server
-data/docs/         60-document synthetic corpus
-tests/             DeepEval test suite
+├──agents/            # Multi-agent workflow
+├──orchestrator.py    # LangGraph orchestration
+├──rag_chain.py       # Qdrant retrieval
+├──memory.py          # Client-scoped memory
+├──tools.py           # Validated tools
+├──hil_gate.py        # Broker approval
+├──observability.py   # Trace logging
+mcp/                  # MCP tool server
+data/docs/            # 60-document synthetic corpus
+tests/                # DeepEval test suite
 ```
 
 ## Commands
