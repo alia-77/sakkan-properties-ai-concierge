@@ -11,7 +11,6 @@ INTENT_KEYWORDS = {
         "find",
         "listing",
         "bedroom",
-        "property",
     ],
     "mortgage": [
         "mortgage",
@@ -64,14 +63,44 @@ def extract_client(request_text):
 def classify_intent(trace_id, request_text):
     text = request_text.lower()
 
-    intents = []
+    has_mortgage = any(
+        keyword in text
+        for keyword in INTENT_KEYWORDS["mortgage"]
+    )
 
-    for intent, keywords in INTENT_KEYWORDS.items():
-        if any(
-            keyword in text
-            for keyword in keywords
-        ):
-            intents.append(intent)
+    has_property_search = any(
+        keyword in text
+        for keyword in INTENT_KEYWORDS["property_search"]
+    )
+
+    has_communication = any(
+        keyword in text
+        for keyword in INTENT_KEYWORDS["communication"]
+    )
+
+    has_scheduling = any(
+        keyword in text
+        for keyword in INTENT_KEYWORDS["scheduling"]
+    )
+
+    # A mortgage-only request should go directly
+    # to the mortgage analyst, even if it mentions "property".
+    if has_mortgage and not has_property_search:
+        intents = ["mortgage"]
+    else:
+        intents = []
+
+        if has_property_search:
+            intents.append("property_search")
+
+        if has_mortgage:
+            intents.append("mortgage")
+
+        if has_communication:
+            intents.append("communication")
+
+        if has_scheduling:
+            intents.append("scheduling")
 
     if not intents:
         intents = ["property_search"]
