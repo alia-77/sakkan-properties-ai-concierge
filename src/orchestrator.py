@@ -1,3 +1,4 @@
+import re
 from typing import Any, List, Optional, TypedDict
 
 from langgraph.graph import END, StateGraph
@@ -174,13 +175,39 @@ def mortgage_node(state):
     )
 
     if not listings:
+        price_match = re.search(
+            r"(\d+(?:\.\d+)?)\s*(?:m|million)",
+            state["request_text"].lower(),
+        )
+
+        if price_match:
+            price = int(
+                float(price_match.group(1)) * 1_000_000
+            )
+
+            result = mortgage_analyst.run(
+                state["trace_id"],
+                state["request_text"],
+                price,
+                counter,
+            )
+
+            return {
+                "mortgages": [
+                    {
+                        "listing_id": None,
+                        "calculation": result,
+                    }
+                ],
+                "mortgage": result,
+                "tool_call_counter": counter,
+                "step_count": increment_step(state),
+            }
+
         return {
             "mortgages": [],
             "mortgage": {
-                "error": (
-                    "no matching properties available "
-                    "for mortgage calculation"
-                )
+                "error": "no property price available"
             },
             "tool_call_counter": counter,
             "step_count": increment_step(state),
@@ -293,60 +320,47 @@ def comms_node(state):
 
 
 def property_result_node(state):
-    listings = state.get(
-        "listings",
-        []
-    )
-
-    retrieved = state.get(
-        "retrieved",
-        []
-    )
+    listings = state.get("listings", [])
+    retrieved = state.get("retrieved", [])
 
     if not listings:
-        return {
-            "final_response": (
-                "No matching properties were found "
-                "in the current listings.\n\n"
-                "Sources: "
-                + ", ".join(
-                    item.get(
-                        "id",
-                        "unknown",
-                    )
-                    for item in retrieved
-                    if item.get("id")
-                )
-            ),
-            "step_count": increment_step(state),
-        }
-
-    lines = []
-
-    for listing in listings:
-        lines.append(
-            f"{listing.get('listing_id')}: "
-            f"{listing.get('type')} in "
-            f"{listing.get('district')}, "
-            f"{listing.get('bedrooms')} bedrooms, "
-            f"{listing.get('price_egp')} EGP"
+        draft = (
+            "No matching properties were found "
+            "in the current listings.\n\n"
+            "Sources: "
+            + ", ".join(
+                item.get("id", "unknown")
+                for item in retrieved
+                if item.get("id")
+            )
         )
+    else:
+        lines = []
 
-    source_ids = [
-        listing.get(
-            "listing_id"
-        )
-        for listing in listings
-        if listing.get("listing_id")
-    ]
+        for listing in listings:
+            lines.append(
+                f"{listing.get('listing_id')}: "
+                f"{listing.get('type')} in "
+                f"{listing.get('district')}, "
+                f"{listing.get('bedrooms')} bedrooms, "
+                f"{listing.get('price_egp')} EGP"
+            )
 
-    return {
-        "final_response": (
+        source_ids = [
+            listing.get("listing_id")
+            for listing in listings
+            if listing.get("listing_id")
+        ]
+
+        draft = (
             "Matching properties:\n"
             + "\n".join(lines)
             + "\n\nSources: "
             + ", ".join(source_ids)
-        ),
+        )
+
+    return {
+        "draft": draft,
         "step_count": increment_step(state),
     }
 
@@ -429,11 +443,11 @@ def route_after_memory(state):
         [],
     )
 
-    if "property_search" in intents:
-        return "property_finder"
-
     if "mortgage" in intents:
         return "mortgage_analyst"
+
+    if "property_search" in intents:
+        return "property_finder"
 
     if "communication" in intents:
         return "comms"
@@ -472,13 +486,10 @@ def route_after_mortgage(state):
     if step_limit_reached(state):
         return "fallback"
 
-    if "communication" in state.get(
-        "intents",
-        [],
-    ):
+    if "communication" in state.get("intents", []):
         return "comms"
 
-    return "property_result"
+    return "mortgage_result"
 
 
 def route_after_comms(state):
@@ -486,6 +497,26 @@ def route_after_comms(state):
         return "fallback"
 
     return "hil"
+
+
+def mortgage_result_node(state):
+    mortgage = state.get("mortgage")
+
+    if not mortgage:
+        return {
+            "final_response": "Unable to calculate the mortgage."
+        }
+
+    return {
+        "final_response": (
+            f"Mortgage calculation:\n"
+            f"Property price: {mortgage['property_price']:,} EGP\n"
+            f"Down payment: {mortgage['down_payment']:,} EGP\n"
+            f"Loan amount: {mortgage['loan_amount']:,} EGP\n"
+            f"Monthly payment: {mortgage['monthly_payment']:,} EGP\n"
+            f"Total interest: {mortgage['total_interest']:,} EGP"
+        )
+    }
 
 
 def build_graph():
@@ -496,6 +527,11 @@ def build_graph():
     graph.add_node(
         "triage",
         triage_node,
+    )
+
+    graph.add_node(
+        "mortgage_result",
+        mortgage_result_node,
     )
 
     graph.add_node(
@@ -574,6 +610,7 @@ def build_graph():
         route_after_mortgage,
         {
             "comms": "comms",
+            "mortgage_result": "mortgage_result",
             "property_result": "property_result",
             "fallback": "fallback",
         },
@@ -590,7 +627,7 @@ def build_graph():
 
     graph.add_edge(
         "property_result",
-        END,
+        "hil",
     )
 
     graph.add_edge(
@@ -600,6 +637,11 @@ def build_graph():
 
     graph.add_edge(
         "fallback",
+        END,
+    )
+
+    graph.add_edge(
+        "mortgage_result",
         END,
     )
 
