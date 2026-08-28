@@ -1,22 +1,22 @@
 # Sakkan Properties AI Concierge
 
-Agentic real-estate concierge for Sakkan Properties, built with LangGraph, Qdrant RAG, mem0, MCP, Chainlit, Human-in-the-Loop review, and DeepEval.
+Agentic real-estate concierge for Sakkan Properties, built with **LangGraph, Qdrant RAG, mem0, MCP, Chainlit, Human-in-the-Loop review, and DeepEval**.
 
-The system helps brokers find matching properties, calculate mortgage scenarios, use client-scoped memory, schedule viewings, and draft client messages. Every client-facing draft passes through a broker approval gate before it is returned.
+The system helps brokers find matching properties, calculate mortgage scenarios, use client-scoped memory, schedule viewings, and draft client messages. Client-facing drafts require broker approval before they are returned.
 
 ## Table of Contents
 
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-- [Example Workflow](#example-workflow)
-- [MCP Tools](#mcp-tools)
-- [Memory](#memory)
-- [Human-in-the-Loop](#human-in-the-loop)
-- [Observability](#observability)
-- [Evaluation](#evaluation)
-- [Useful Commands](#useful-commands)
-- [Project Structure](#project-structure)
-- [Responsible AI](#responsible-ai)
+* [Architecture](#architecture)
+* [Quick Start](#quick-start)
+* [Example Workflow](#example-workflow)
+* [MCP Tools](#mcp-tools)
+* [Memory](#memory)
+* [Human-in-the-Loop](#human-in-the-loop)
+* [Observability](#observability)
+* [Evaluation](#evaluation)
+* [Useful Commands](#useful-commands)
+* [Project Structure](#project-structure)
+* [Responsible AI](#responsible-ai)
 
 ## Architecture
 
@@ -43,10 +43,10 @@ LangGraph Orchestrator
 
 Supporting systems:
 
-- **mem0**: client preferences, ongoing deals, episodic memory
-- **MCP**: listing search, listing lookup, mortgage calculation, viewing scheduling
-- **structlog**: trace ID propagated across all workflow events
-- **DeepEval**: automated evaluation suite
+* **mem0:** client preferences, ongoing deals, and episodic memory
+* **MCP:** listing search, listing lookup, mortgage calculation, and viewing scheduling
+* **structlog:** trace ID across workflow events
+* **DeepEval:** automated evaluation
 
 ## Quick Start
 
@@ -70,25 +70,25 @@ Main demonstration scenario:
 
 > Find Mr. Hassan three apartments in New Cairo under 5M EGP with 3 bedrooms, calculate his mortgage at 18% over 15 years with a 30% down payment, draft him a WhatsApp message in Arabic with the shortlist, and don't send anything until I approve.
 
-This exercises:
+This demonstrates:
 
 1. Intent and client identification
 2. Client-scoped memory retrieval
 3. Qdrant retrieval
-4. Listing search through tools
+4. Listing search
 5. Mortgage calculation
 6. Arabic communication drafting
-7. Human approval before client-facing output
+7. Human approval
 8. Structured trace logging
 
 ## MCP Tools
 
 The MCP server exposes four validated tools:
 
-- `search_listings`
-- `fetch_listing`
-- `mortgage_calculator`
-- `schedule_viewing`
+* `search_listings`
+* `fetch_listing`
+* `mortgage_calculator`
+* `schedule_viewing`
 
 Run the MCP server with:
 
@@ -98,29 +98,31 @@ python mcp\mcp_tool_server.py
 
 ## Memory
 
-mem0 stores client-scoped information using three patterns:
+mem0 stores three types of client-scoped memory:
 
-- Client preferences
-- Broker ongoing deals
-- Episodic conversation summaries
+* Client preferences
+* Broker ongoing deals
+* Episodic conversation summaries
 
 Memory writes require explicit consent.
 
-Remove a client's stored memory without displaying its contents:
+Use:
 
 ```text
 /forget <client_id>
 ```
 
+to remove a client's stored memory without displaying its contents.
+
 ## Human-in-the-Loop
 
-Any client-facing draft requires broker review through one of:
+Client-facing drafts are paused for broker review using:
 
-- **Approve**
-- **Reject**
-- **Edit**
+* **Approve**
+* **Reject**
+* **Edit**
 
-No client-facing message is returned as approved without a corresponding approval decision.
+A communication draft is only returned as the final client-facing message after an approval or edit decision.
 
 ## Observability
 
@@ -132,18 +134,20 @@ Structured events are written to:
 outputs/trace_logs.jsonl
 ```
 
-Logs cover agent transitions, retrievals, tool calls, memory operations, and Human-in-the-Loop decisions.
+The logs cover agent transitions, retrievals, tool calls, memory operations, and Human-in-the-Loop decisions.
 
 ## Evaluation
 
-The project includes 10 evaluation cases using DeepEval, covering:
+The project includes 10 evaluation cases using DeepEval.
 
-- Faithfulness
-- Provenance
-- Tool-call presence
-- Consent respect
-- Human-in-the-Loop behavior
-- HiL compliance
+The evaluation covers:
+
+* **Faithfulness**
+* **ConsentRespect**
+* **HiLRespect**
+* **Tool-call presence**
+* Listing provenance
+* Human-in-the-Loop behavior
 
 Results are stored in:
 
@@ -183,11 +187,13 @@ Run the evaluation suite:
 pytest tests\test_agent.py -q
 ```
 
-Run individual component checks:
+Check triage intent classification:
 
 ```powershell
 python -c "from src.agents.triage_agent import classify_intent; print(classify_intent('test', 'Calculate a mortgage for a 4M EGP property at 18% for 15 years with 30% down.'))"
 ```
+
+Check mortgage parameter extraction:
 
 ```powershell
 python -c "from src.agents.mortgage_analyst import extract_mortgage_params; print(extract_mortgage_params('Calculate a mortgage for a 4M EGP property at 18% for 15 years with 30% down.', 4000000))"
@@ -238,9 +244,9 @@ sakkan-properties-ai-concierge/
 
 The system is designed to:
 
-- avoid fabricated listings and prices
-- preserve client data isolation
-- require consent before memory writes
-- require human review for every client-facing message
+* avoid unsupported property claims
+* preserve client data isolation
+* require consent before memory writes
+* require human review for client-facing communication
 
 All property and client data is synthetic and created specifically for this project.
