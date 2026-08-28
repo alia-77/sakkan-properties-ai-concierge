@@ -443,11 +443,11 @@ def route_after_memory(state):
         [],
     )
 
-    if "mortgage" in intents:
-        return "mortgage_analyst"
-
     if "property_search" in intents:
         return "property_finder"
+
+    if "mortgage" in intents:
+        return "mortgage_analyst"
 
     if "communication" in intents:
         return "comms"
