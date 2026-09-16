@@ -244,9 +244,9 @@ sakkan-properties-ai-concierge/
 
 The system is designed to:
 
-* avoid unsupported property claims
-* preserve client data isolation
-* require consent before memory writes
-* require human review for client-facing communication
+* Avoid unsupported property claims
+* Preserve client data isolation
+* Require consent before memory writes
+* Require human review for client-facing communication
 
 All property and client data is synthetic and created specifically for this project.
