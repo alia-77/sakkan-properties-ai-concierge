@@ -36,7 +36,7 @@ async def call_mcp_tool(
                 arguments=arguments,
             )
 
-            if result.is_error:
+            if getattr(result, "isError", False):
                 details = [
                     getattr(item, "text", str(item))
                     for item in result.content
