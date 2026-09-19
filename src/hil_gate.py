@@ -21,7 +21,7 @@ async def request_approval(
         draft=draft,
     )
 
-    # Used by the Chainlit UI when a callback is provided.
+    # Used by the Chainlit UI and scripted evaluation callbacks.
     if approve_callback:
         result = await approve_callback(draft)
 
@@ -45,14 +45,15 @@ async def request_approval(
             final_text=final_text,
         )
 
-    # For direct/backend testing, automatically approve the draft.
+    # Fail closed when no approval mechanism is available.
     event(
         trace_id,
         "hil_decision",
-        decision="approve",
+        decision="pending",
+        reason="approval_callback_missing",
     )
 
     return ApprovalResult(
-        decision="approve",
-        final_text=draft,
+        decision="pending",
+        final_text="",
     )
