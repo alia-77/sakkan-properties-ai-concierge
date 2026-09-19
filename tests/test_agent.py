@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.hil_gate import request_approval
 from src.orchestrator import run_concierge
 from src.tools import listing_docs
 
@@ -66,10 +67,35 @@ def get_tools_called(result):
     return tools
 
 
+async def scripted_approval(draft, decision):
+    if decision == "edit":
+        return (
+            "edit",
+            f"[Edited by broker]\n{draft}",
+        )
+
+    return decision, draft
+
+
 async def run_case(case):
     trace_id = (
         f"eval-{uuid.uuid4().hex}"
     )
+
+    decision = case.get(
+        "hil_decision",
+        "approve",
+    )
+
+    approval_callback = None
+
+    if case.get("requires_hil"):
+        approval_callback = (
+            lambda draft: scripted_approval(
+                draft,
+                decision,
+            )
+        )
 
     return await run_concierge(
         trace_id=trace_id,
@@ -80,6 +106,7 @@ async def run_case(case):
             if case.get("client_id")
             else None
         ),
+        approve_callback=approval_callback,
     )
 
 
@@ -184,13 +211,14 @@ async def evaluate_case(
         False,
     )
 
+    expected_hil_decision = case.get(
+        "hil_decision"
+    )
+
     hil_passed = (
         not hil_required
         or result.get("hil_decision")
-        in {
-            "approve",
-            "edit",
-        }
+        == expected_hil_decision
     )
 
     print(
@@ -217,6 +245,8 @@ async def evaluate_case(
         actual_output=(
             f"HiL decision: "
             f"{result.get('hil_decision')}\n"
+            f"Expected decision: "
+            f"{expected_hil_decision}\n"
             f"Output: {output}"
         ),
     )
@@ -296,6 +326,9 @@ async def evaluate_case(
         "tool_present": tool_present,
         "provenance": provenance_ok,
         "hil_required": hil_required,
+        "expected_hil_decision": (
+            expected_hil_decision
+        ),
         "hil_decision": result.get(
             "hil_decision"
         ),
@@ -554,3 +587,16 @@ def test_agent_evaluation():
         for case in report["cases"]
         if case["hil_required"]
     )
+
+
+
+def test_hil_fails_closed_without_callback():
+    result = asyncio.run(
+        request_approval(
+            trace_id="test-hil-fail-closed",
+            draft="Draft client message",
+        )
+    )
+
+    assert result.decision == "pending"
+    assert result.final_text == ""
