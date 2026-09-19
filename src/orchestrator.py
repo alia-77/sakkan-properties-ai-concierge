@@ -116,14 +116,14 @@ def memory_read_node(state):
         }
 
 
-def property_finder_node(state):
+async def property_finder_node(state):
     counter = state.get(
         "tool_call_counter",
         {},
     )
 
     try:
-        result = property_finder.run(
+        result = await property_finder.run(
             state["trace_id"],
             state["request_text"],
             counter,
@@ -163,7 +163,7 @@ def property_finder_node(state):
         }
 
 
-def mortgage_node(state):
+async def mortgage_node(state):
     counter = state.get(
         "tool_call_counter",
         {},
@@ -185,7 +185,7 @@ def mortgage_node(state):
                 float(price_match.group(1)) * 1_000_000
             )
 
-            result = mortgage_analyst.run(
+            result = await mortgage_analyst.run(
                 state["trace_id"],
                 state["request_text"],
                 price,
@@ -246,7 +246,7 @@ def mortgage_node(state):
             )
             continue
 
-        result = mortgage_analyst.run(
+        result = await mortgage_analyst.run(
             state["trace_id"],
             state["request_text"],
             price,
