@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.hil_gate import request_approval
 from src.orchestrator import run_concierge
 from src.tools import listing_docs
 
@@ -586,3 +587,16 @@ def test_agent_evaluation():
         for case in report["cases"]
         if case["hil_required"]
     )
+
+
+
+def test_hil_fails_closed_without_callback():
+    result = asyncio.run(
+        request_approval(
+            trace_id="test-hil-fail-closed",
+            draft="Draft client message",
+        )
+    )
+
+    assert result.decision == "pending"
+    assert result.final_text == ""
