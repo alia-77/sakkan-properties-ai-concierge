@@ -1,7 +1,7 @@
 import re
 
+from src.mcp_client import call_mcp_tool
 from src.rag_chain import retrieve
-from src.tools import search_listings
 from src.observability import event
 from src.settings import MAX_TOOL_CALLS_PER_AGENT
 
@@ -25,7 +25,7 @@ def extract_search_params(request_text):
     max_price = None
 
     price_match = re.search(
-        r"(?:under|below|less than)\s+([\d,.]+)\s*(?:m|million)",
+        r"(?:under|below|less than)s+([d,.]+)s*(?:m|million)",
         text,
     )
 
@@ -37,7 +37,7 @@ def extract_search_params(request_text):
     min_bedrooms = None
 
     bed_match = re.search(
-        r"(\d+)\s*(?:bedrooms?|br)\b",
+        r"(d+)s*(?:bedrooms?|br)",
         text,
     )
 
@@ -59,7 +59,7 @@ def extract_search_params(request_text):
     }
 
 
-def run(trace_id, request_text, tool_call_counter):
+async def run(trace_id, request_text, tool_call_counter):
     event(
         trace_id,
         "agent_transition",
@@ -100,7 +100,10 @@ def run(trace_id, request_text, tool_call_counter):
         }
 
     try:
-        tool_result = search_listings(params)
+        tool_result = await call_mcp_tool(
+            "search_listings",
+            params,
+        )
 
         tool_call_counter["property_finder"] = (
             tool_call_counter.get("property_finder", 0) + 1
@@ -111,6 +114,7 @@ def run(trace_id, request_text, tool_call_counter):
             "tool_call",
             agent="property_finder",
             tool="search_listings",
+            protocol="mcp",
             input=params,
             output=tool_result,
         )
@@ -129,6 +133,7 @@ def run(trace_id, request_text, tool_call_counter):
             "tool_error",
             agent="property_finder",
             tool="search_listings",
+            protocol="mcp",
             error=str(exc),
         )
 
