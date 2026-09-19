@@ -1,15 +1,15 @@
 import re
 
+from src.mcp_client import call_mcp_tool
 from src.observability import event
 from src.settings import MAX_TOOL_CALLS_PER_AGENT
-from src.tools import mortgage_calculator
 
 
 def extract_mortgage_params(request_text, price):
     text = request_text.lower()
 
     rate_match = re.search(
-        r"(\d+(?:\.\d+)?)\s*%",
+        r"(d+(?:.d+)?)s*%",
         text,
     )
 
@@ -20,7 +20,7 @@ def extract_mortgage_params(request_text, price):
     )
 
     years_match = re.search(
-        r"(\d+)\s*(?:year|years)",
+        r"(d+)s*(?:year|years)",
         text,
     )
 
@@ -31,7 +31,7 @@ def extract_mortgage_params(request_text, price):
     )
 
     down_match = re.search(
-        r"(\d+(?:\.\d+)?)\s*%\s*(?:down|down payment)",
+        r"(d+(?:.d+)?)s*%s*(?:down|down payment)",
         text,
     )
 
@@ -49,7 +49,7 @@ def extract_mortgage_params(request_text, price):
     }
 
 
-def run(
+async def run(
     trace_id,
     request_text,
     price,
@@ -100,8 +100,9 @@ def run(
     )
 
     try:
-        result = mortgage_calculator(
-            params
+        result = await call_mcp_tool(
+            "mortgage_calculator",
+            params,
         )
 
         tool_call_counter[
@@ -119,6 +120,7 @@ def run(
             "tool_call",
             agent="mortgage_analyst",
             tool="mortgage_calculator",
+            protocol="mcp",
             input=params,
             output=result,
         )
@@ -131,6 +133,7 @@ def run(
             "tool_error",
             agent="mortgage_analyst",
             tool="mortgage_calculator",
+            protocol="mcp",
             error=str(exc),
         )
 
