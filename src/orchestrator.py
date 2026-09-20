@@ -307,6 +307,10 @@ def comms_node(state):
             "retrieved",
             [],
         ),
+        state.get(
+            "memory_context",
+            [],
+        ),
     )
 
     return {

@@ -1,15 +1,72 @@
 import re
 
+from src.llm import generate_json
 from src.mcp_client import call_mcp_tool
 from src.observability import event
 from src.settings import MAX_TOOL_CALLS_PER_AGENT
 
 
-def extract_mortgage_params(request_text, price):
+def extract_mortgage_params(
+    trace_id,
+    request_text,
+    price,
+):
+    prompt = f"""
+Extract mortgage parameters from the user's request.
+
+Return JSON only with exactly these keys:
+{{
+  "annual_rate": number,
+  "down_payment_percent": number,
+  "years": integer
+}}
+
+Rules:
+- Use the explicitly requested values.
+- If a value is missing, use these defaults:
+  annual_rate: 18.0
+  down_payment_percent: 30.0
+  years: 15
+- Do not calculate the mortgage yourself.
+- The property price is supplied separately as {price} EGP.
+
+User request:
+{request_text}
+"""
+
+    result = generate_json(
+        trace_id,
+        "mortgage_analyst",
+        prompt,
+    )
+
+    if result:
+        return {
+            "price": price,
+            "annual_rate": float(
+                result.get(
+                    "annual_rate",
+                    18.0,
+                )
+            ),
+            "down_payment_percent": float(
+                result.get(
+                    "down_payment_percent",
+                    30.0,
+                )
+            ),
+            "years": int(
+                result.get(
+                    "years",
+                    15,
+                )
+            ),
+        }
+
     text = request_text.lower()
 
     rate_match = re.search(
-        r"(d+(?:.d+)?)s*%",
+        r"(\d+(?:\.\d+)?)\s*%",
         text,
     )
 
@@ -20,7 +77,7 @@ def extract_mortgage_params(request_text, price):
     )
 
     years_match = re.search(
-        r"(d+)s*(?:year|years)",
+        r"(\d+)\s*(?:year|years)",
         text,
     )
 
@@ -31,7 +88,7 @@ def extract_mortgage_params(request_text, price):
     )
 
     down_match = re.search(
-        r"(d+(?:.d+)?)s*%s*(?:down|down payment)",
+        r"(\d+(?:\.\d+)?)\s*%\s*(?:down|down payment)",
         text,
     )
 
@@ -74,13 +131,10 @@ async def run(
             "error": "no valid property price available"
         }
 
-    if (
-        tool_call_counter.get(
-            "mortgage_analyst",
-            0,
-        )
-        >= MAX_TOOL_CALLS_PER_AGENT
-    ):
+    if tool_call_counter.get(
+        "mortgage_analyst",
+        0,
+    ) >= MAX_TOOL_CALLS_PER_AGENT:
         event(
             trace_id,
             "tool_call_limit_reached",
@@ -95,6 +149,7 @@ async def run(
         }
 
     params = extract_mortgage_params(
+        trace_id,
         request_text,
         price,
     )

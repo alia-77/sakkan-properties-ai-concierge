@@ -1,6 +1,6 @@
 # Sakkan Properties AI Concierge
 
-Agentic real-estate concierge for Sakkan Properties, built with **LangGraph, Qdrant RAG, mem0, MCP, Chainlit, Human-in-the-Loop review, and DeepEval**.
+Agentic real-estate concierge for Sakkan Properties, built with **LangGraph, Gemini LLM agents, Qdrant RAG, mem0, MCP, Chainlit, Human-in-the-Loop review, and DeepEval**.
 
 The system helps brokers find matching properties, calculate mortgage scenarios, use client-scoped memory, schedule viewings, and draft client messages. Client-facing drafts require broker approval before they are returned.
 
@@ -29,10 +29,10 @@ Chainlit UI
   v
 LangGraph Orchestrator
   |
-  |-- Triage Agent
-  |-- Property Finder --> Qdrant RAG + Listing Tools
-  |-- Mortgage Analyst --> MCP Mortgage Tool
-  |-- Communication Agent
+  |-- Triage Agent --> Gemini
+  |-- Property Finder --> Gemini + Qdrant RAG + MCP
+  |-- Mortgage Analyst --> Gemini + MCP Mortgage Tool
+  |-- Communication Agent --> Gemini
              |
              v
        Human-in-the-Loop
@@ -187,16 +187,10 @@ Run the evaluation suite:
 pytest tests\test_agent.py -q
 ```
 
-Check triage intent classification:
+LLM-powered agent behavior is exercised by:
 
 ```powershell
-python -c "from src.agents.triage_agent import classify_intent; print(classify_intent('test', 'Calculate a mortgage for a 4M EGP property at 18% for 15 years with 30% down.'))"
-```
-
-Check mortgage parameter extraction:
-
-```powershell
-python -c "from src.agents.mortgage_analyst import extract_mortgage_params; print(extract_mortgage_params('Calculate a mortgage for a 4M EGP property at 18% for 15 years with 30% down.', 4000000))"
+pytest tests\test_llm_agents.py -q
 ```
 
 ## Project Structure
