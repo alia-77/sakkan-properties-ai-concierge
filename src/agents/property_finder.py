@@ -1,12 +1,49 @@
 import re
 
+from src.llm import generate_json
 from src.mcp_client import call_mcp_tool
 from src.rag_chain import retrieve
 from src.observability import event
 from src.settings import MAX_TOOL_CALLS_PER_AGENT
 
 
-def extract_search_params(request_text):
+def extract_search_params(trace_id, request_text):
+    prompt = f"""
+Extract structured property-search filters from the user's request.
+
+Return JSON only with exactly these keys:
+{{
+  "district": string or null,
+  "max_price": integer or null,
+  "min_bedrooms": integer or null,
+  "property_type": "apartment" | "villa" | "townhouse" | null
+}}
+
+Rules:
+- Convert prices expressed in millions to EGP.
+- "under", "below", or "less than" means max_price.
+- Preserve the requested minimum bedroom count.
+- Only use districts and property types supported by the request.
+- Do not guess missing values.
+
+User request:
+{request_text}
+"""
+
+    result = generate_json(
+        trace_id,
+        "property_finder",
+        prompt,
+    )
+
+    if result:
+        return {
+            "district": result.get("district"),
+            "max_price": result.get("max_price"),
+            "min_bedrooms": result.get("min_bedrooms"),
+            "property_type": result.get("property_type"),
+        }
+
     text = request_text.lower()
 
     district = None
@@ -25,28 +62,37 @@ def extract_search_params(request_text):
     max_price = None
 
     price_match = re.search(
-        r"(?:under|below|less than)s+([d,.]+)s*(?:m|million)",
+        r"(?:under|below|less than)\s*([\d,.]+)\s*(?:m|million)",
         text,
     )
 
     if price_match:
         max_price = int(
-            float(price_match.group(1).replace(",", "")) * 1_000_000
+            float(
+                price_match.group(1).replace(",", "")
+            )
+            * 1_000_000
         )
 
     min_bedrooms = None
 
     bed_match = re.search(
-        r"(d+)s*(?:bedrooms?|br)",
+        r"(\d+)\s*(?:bedrooms?|br)\b",
         text,
     )
 
     if bed_match:
-        min_bedrooms = int(bed_match.group(1))
+        min_bedrooms = int(
+            bed_match.group(1)
+        )
 
     property_type = None
 
-    for p in ["apartment", "villa", "townhouse"]:
+    for p in [
+        "apartment",
+        "villa",
+        "townhouse",
+    ]:
         if p in text:
             property_type = p
             break
@@ -68,7 +114,10 @@ async def run(trace_id, request_text, tool_call_counter):
     )
 
     try:
-        retrieved = retrieve(request_text, top_k=4)
+        retrieved = retrieve(
+            request_text,
+            top_k=4,
+        )
     except Exception as exc:
         event(
             trace_id,
@@ -82,11 +131,21 @@ async def run(trace_id, request_text, tool_call_counter):
         trace_id,
         "retrieval",
         agent="property_finder",
-        doc_ids=[item["id"] for item in retrieved],
+        doc_ids=[
+            item["id"]
+            for item in retrieved
+        ],
     )
-    params = extract_search_params(request_text)
 
-    if tool_call_counter.get("property_finder", 0) >= MAX_TOOL_CALLS_PER_AGENT:
+    params = extract_search_params(
+        trace_id,
+        request_text,
+    )
+
+    if tool_call_counter.get(
+        "property_finder",
+        0,
+    ) >= MAX_TOOL_CALLS_PER_AGENT:
         event(
             trace_id,
             "tool_call_limit_reached",
@@ -106,7 +165,11 @@ async def run(trace_id, request_text, tool_call_counter):
         )
 
         tool_call_counter["property_finder"] = (
-            tool_call_counter.get("property_finder", 0) + 1
+            tool_call_counter.get(
+                "property_finder",
+                0,
+            )
+            + 1
         )
 
         event(
@@ -119,7 +182,10 @@ async def run(trace_id, request_text, tool_call_counter):
             output=tool_result,
         )
 
-        listings = tool_result.get("results", [])
+        listings = tool_result.get(
+            "results",
+            [],
+        )
 
         return {
             "listings": listings,

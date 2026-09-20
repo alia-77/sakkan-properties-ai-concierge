@@ -1,5 +1,6 @@
 import re
 
+from src.llm import generate_json
 from src.observability import event
 
 
@@ -61,49 +62,85 @@ def extract_client(request_text):
 
 
 def classify_intent(trace_id, request_text):
-    text = request_text.lower()
+    prompt = f"""
+You are the triage agent for a real-estate concierge.
 
-    has_mortgage = any(
-        keyword in text
-        for keyword in INTENT_KEYWORDS["mortgage"]
+Classify the user's request into zero or more of these intents:
+- property_search
+- mortgage
+- communication
+- scheduling
+
+Return JSON only:
+{{"intents": ["..."]}}
+
+Rules:
+- Include every intent explicitly requested or clearly implied.
+- A mortgage request can coexist with property_search.
+- A request to draft or send a client message is communication.
+- A request for a viewing, visit, appointment, or scheduling is scheduling.
+- If none are clear, return property_search.
+- Do not invent intents.
+
+User request:
+{request_text}
+"""
+
+    result = generate_json(
+        trace_id,
+        "triage",
+        prompt,
     )
 
-    has_property_search = any(
-        keyword in text
-        for keyword in INTENT_KEYWORDS["property_search"]
-    )
+    intents = result.get("intents", []) if result else []
 
-    has_communication = any(
-        keyword in text
-        for keyword in INTENT_KEYWORDS["communication"]
-    )
+    allowed = {
+        "property_search",
+        "mortgage",
+        "communication",
+        "scheduling",
+    }
 
-    has_scheduling = any(
-        keyword in text
-        for keyword in INTENT_KEYWORDS["scheduling"]
-    )
-
-    # A mortgage-only request should go directly
-    # to the mortgage analyst, even if it mentions "property".
-    if has_mortgage and not has_property_search:
-        intents = ["mortgage"]
-    else:
-        intents = []
-
-        if has_property_search:
-            intents.append("property_search")
-
-        if has_mortgage:
-            intents.append("mortgage")
-
-        if has_communication:
-            intents.append("communication")
-
-        if has_scheduling:
-            intents.append("scheduling")
+    intents = [
+        intent
+        for intent in intents
+        if intent in allowed
+    ]
 
     if not intents:
-        intents = ["property_search"]
+        text = request_text.lower()
+
+        has_mortgage = any(
+            keyword in text
+            for keyword in [
+                "mortgage",
+                "loan",
+                "down payment",
+                "interest",
+                "monthly payment",
+            ]
+        )
+
+        has_property_search = any(
+            keyword in text
+            for keyword in [
+                "apartment",
+                "villa",
+                "townhouse",
+                "find",
+                "listing",
+                "bedroom",
+            ]
+        )
+
+        if has_mortgage and not has_property_search:
+            intents = ["mortgage"]
+        else:
+            intents = (
+                ["property_search"]
+                if not has_property_search
+                else ["property_search"]
+            )
 
     event(
         trace_id,

@@ -1,3 +1,4 @@
+from src.llm import generate_json
 from src.observability import event
 
 
@@ -24,6 +25,7 @@ def draft_message(
     mortgage,
     language,
     retrieved=None,
+    memory_context=None,
 ):
     event(
         trace_id,
@@ -34,17 +36,7 @@ def draft_message(
 
     listings = listings or []
     retrieved = retrieved or []
-
-    listing_lines = []
-
-    for item in listings:
-        listing_lines.append(
-            f"{item.get('listing_id')}: "
-            f"{item.get('type')} in "
-            f"{item.get('district')}, "
-            f"{item.get('bedrooms')} bedrooms, "
-            f"{item.get('price_egp')} EGP"
-        )
+    memory_context = memory_context or []
 
     cited_ids = [
         item.get("listing_id")
@@ -59,91 +51,87 @@ def draft_message(
             if item.get("id")
         ]
 
-    if listing_lines:
-        body_en = (
-            f"Dear {client_name}, "
-            "here are the properties "
-            "we shortlisted for you:\n"
-            + "\n".join(listing_lines)
-        )
+    prompt = f"""
+You are the communication agent for a real-estate concierge.
 
-        if mortgage and "monthly_payment" in mortgage:
-            body_en += (
-                f"\n\nEstimated mortgage: "
-                f"{mortgage['monthly_payment']} EGP "
-                f"per month over "
-                f"{mortgage['years']} years at "
-                f"{mortgage['rate_pct']}% interest, "
-                f"based on a "
-                f"{mortgage['property_price']} EGP "
-                "property price and "
-                f"{mortgage.get('down_payment', 0)} EGP "
-                "down payment."
-            )
+Draft a client-facing message in {language} for {client_name or "the client"}.
 
-        body_en += (
-            "\n\nLet us know if you would like "
-            "to schedule a viewing."
-        )
-    else:
-        body_en = (
-            f"Dear {client_name}, "
-            "we did not find any properties "
-            "matching your criteria in our "
-            "current listings."
-        )
+Use only the factual data supplied below. Do not invent listings,
+prices, mortgage values, availability, or scheduling details.
+Keep the message natural and concise. Match the requested language.
+If there are no matching listings, explain that clearly.
+If a mortgage calculation is present, summarize its supplied values.
 
-    if language == "Arabic":
-        listing_lines_ar = []
+Listings:
+{listings}
+
+Mortgage:
+{mortgage}
+
+Relevant retrieved documents:
+{retrieved}
+
+Relevant client memory:
+{memory_context}
+
+Return JSON only:
+{{"draft": "message text"}}
+"""
+
+    result = generate_json(
+        trace_id,
+        "comms",
+        prompt,
+    )
+
+    draft = (
+        result.get("draft")
+        if result and result.get("draft")
+        else None
+    )
+
+    if not draft:
+        lines = []
 
         for item in listings:
-            listing_lines_ar.append(
+            lines.append(
                 f"{item.get('listing_id')}: "
-                f"{item.get('type')} في "
+                f"{item.get('type')} in "
                 f"{item.get('district')}, "
-                f"{item.get('bedrooms')} غرف نوم, "
-                f"{item.get('price_egp')} جنيه"
+                f"{item.get('bedrooms')} bedrooms, "
+                f"{item.get('price_egp')} EGP"
             )
 
-        if listing_lines_ar:
-            body = (
-                f"عزيزي {client_name}، "
-                "هذه هي العقارات التي اخترناها لك:\n"
-                + "\n".join(listing_lines_ar)
-            )
-
-            if mortgage and "monthly_payment" in mortgage:
-                body += (
-                    f"\n\nالتقدير الشهري للقسط: "
-                    f"{mortgage['monthly_payment']} جنيه "
-                    f"شهرياً على مدى "
-                    f"{mortgage['years']} سنة "
-                    f"بفائدة "
-                    f"{mortgage['rate_pct']}%."
-                )
-
-            body += (
-                "\n\nأخبرنا إذا كنت ترغب "
-                "في تحديد موعد للمعاينة."
+        if lines:
+            draft = (
+                f"Dear {client_name or 'client'}, "
+                "here are the shortlisted properties:\n"
+                + "\n".join(lines)
             )
         else:
-            body = (
-                f"عزيزي {client_name}، "
-                "لم نجد عقارات مطابقة لمعاييرك "
-                "في قوائمنا الحالية."
+            draft = (
+                f"Dear {client_name or 'client'}, "
+                "we did not find any matching properties "
+                "in the current listings."
             )
-    else:
-        body = body_en
+
+        if mortgage and mortgage.get(
+            "monthly_payment"
+        ):
+            draft += (
+                f"\n\nEstimated monthly payment: "
+                f"{mortgage['monthly_payment']} EGP."
+            )
 
     if cited_ids:
-        body += (
+        draft += (
             "\n\nSources: "
             + ", ".join(cited_ids)
         )
     else:
-        body += (
-            "\n\nSources: "
-            "no matching listing or document IDs"
+        draft += (
+            "\n\nSources: no matching listing "
+            "or document IDs"
         )
 
     event(
@@ -151,10 +139,11 @@ def draft_message(
         "draft_created",
         language=language,
         cited_listing_ids=cited_ids,
+        llm_generated=bool(result),
     )
 
     return {
-        "draft": body,
+        "draft": draft,
         "language": language,
         "cited_listing_ids": cited_ids,
     }
