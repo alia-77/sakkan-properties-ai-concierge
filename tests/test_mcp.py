@@ -72,4 +72,4 @@ def test_mcp_schedule_viewing():
     )
 
     assert result["status"] == "scheduled"
-    assert result["reference"] == "VIEW-0001"
+    assert result["reference"] == "VIEW-_001"
