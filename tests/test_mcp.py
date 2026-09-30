@@ -44,3 +44,32 @@ def test_mcp_mortgage_calculator():
 
     assert result["property_price"] == 2_000_000
     assert result["monthly_payment"] == 22_546
+
+
+def test_mcp_fetch_listing():
+    result = asyncio.run(
+        call_mcp_tool(
+            "fetch_listing",
+            {"listing_id": "listing_001"},
+        )
+    )
+
+    assert result["listing_id"] == "listing_001"
+    assert result["text"]
+
+
+def test_mcp_schedule_viewing():
+    result = asyncio.run(
+        call_mcp_tool(
+            "schedule_viewing",
+            {
+                "listing_id": "listing_001",
+                "client_id": "hassan",
+                "date": "tomorrow",
+                "time": "15:00",
+            },
+        )
+    )
+
+    assert result["status"] == "scheduled"
+    assert result["reference"] == "VIEW-0001"

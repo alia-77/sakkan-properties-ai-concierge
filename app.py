@@ -226,6 +226,15 @@ async def main(message: cl.Message):
                 result["listings"]
             )
 
+    if result.get("scheduled_viewing"):
+        async with cl.Step(
+            name="Scheduling",
+            type="tool",
+        ) as step:
+            step.output = str(
+                result["scheduled_viewing"]
+            )
+
     if result.get("mortgages"):
         async with cl.Step(
             name="Mortgage Analyst",

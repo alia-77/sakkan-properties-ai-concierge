@@ -64,6 +64,12 @@ def get_tools_called(result):
     if counters.get("mortgage_analyst", 0):
         tools.append("mortgage_calculator")
 
+    if counters.get("listing_action", 0):
+        tools.append("fetch_listing")
+
+    if counters.get("scheduling", 0):
+        tools.append("schedule_viewing")
+
     return tools
 
 
