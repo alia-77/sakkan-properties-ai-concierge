@@ -49,10 +49,12 @@ def test_full_listing_communication_flow(monkeypatch):
         },
     )
 
-    result = asyncio.run(run_concierge(
-        "integration-listing",
-        "Draft an English follow-up mentioning listing_001.",
-        approve_callback=approved,
+    result = asyncio.run(
+        run_concierge(
+            "integration-listing",
+            "Draft an English follow-up mentioning listing_001.",
+            approve_callback=approved,
+        )
     )
 
     assert result["intents"] == ["communication"]
@@ -61,7 +63,6 @@ def test_full_listing_communication_flow(monkeypatch):
     assert result["final_response"] == "Draft mentioning listing_001."
 
 
-@pytest.mark.asyncio
 def test_full_scheduling_flow_reaches_hil(monkeypatch):
     from src.agents import triage_agent
 
@@ -91,10 +92,12 @@ def test_full_scheduling_flow_reaches_hil(monkeypatch):
         fake_mcp,
     )
 
-    result = asyncio.run(run_concierge(
-        "integration-scheduling",
-        "Schedule a viewing for listing_001 for Hassan tomorrow at 15:00.",
-        approve_callback=approved,
+    result = asyncio.run(
+        run_concierge(
+            "integration-scheduling",
+            "Schedule a viewing for listing_001 for Hassan tomorrow at 15:00.",
+            approve_callback=approved,
+        )
     )
 
     assert calls == [
@@ -114,7 +117,6 @@ def test_full_scheduling_flow_reaches_hil(monkeypatch):
     assert "VIEW-0001" in result["final_response"]
 
 
-@pytest.mark.asyncio
 def test_full_flow_fails_closed_without_approval(monkeypatch):
     from src.agents import triage_agent
 
@@ -141,9 +143,11 @@ def test_full_flow_fails_closed_without_approval(monkeypatch):
         fake_mcp,
     )
 
-    result = asyncio.run(run_concierge(
-        "integration-no-approval",
-        "Schedule a viewing for listing_001 tomorrow at 15:00.",
+    result = asyncio.run(
+        run_concierge(
+            "integration-no-approval",
+            "Schedule a viewing for listing_001 tomorrow at 15:00.",
+        )
     )
 
     assert result["hil_decision"] == "pending"
