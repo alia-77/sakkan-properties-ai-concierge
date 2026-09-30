@@ -289,7 +289,15 @@ async def listing_action_node(state):
     request_text = state["request_text"]
     client_id = state.get("client_id") or "unknown"
     counter = state.get("tool_call_counter", {})
-    listing_ids = re.findall(r"listing_\d+", request_text.lower())
+    listing_ids = [
+        item.get("listing_id")
+        for item in state.get("listings", [])
+        if item.get("listing_id")
+    ]
+
+    listing_ids.extend(
+        re.findall(r"listing_\d+", request_text.lower())
+    )
 
     if not listing_ids:
         for item in state.get("memory_context", []):
@@ -635,7 +643,7 @@ def route_after_property(state):
         return "mortgage_analyst"
 
     if "communication" in intents:
-        return "comms"
+        return "listing_action"
 
     if "scheduling" in intents:
         return "scheduling"
@@ -648,7 +656,7 @@ def route_after_mortgage(state):
         return "fallback"
 
     if "communication" in state.get("intents", []):
-        return "comms"
+        return "listing_action"
 
     return "mortgage_result"
 
