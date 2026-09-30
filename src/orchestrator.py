@@ -10,6 +10,7 @@ from src.agents import (
     triage_agent,
 )
 from src.hil_gate import request_approval
+from src.mcp_client import call_mcp_tool
 from src.memory import MemoryStore
 from src.observability import event
 from src.settings import MAX_TOTAL_STEPS
@@ -37,6 +38,7 @@ class ConciergeState(TypedDict, total=False):
     draft: Optional[str]
     language: str
     cited_listing_ids: List[str]
+    scheduled_viewing: Optional[dict]
 
     hil_decision: Optional[str]
     final_response: Optional[str]
@@ -283,6 +285,169 @@ async def mortgage_node(state):
     }
 
 
+async def listing_action_node(state):
+    request_text = state["request_text"]
+    client_id = state.get("client_id") or "unknown"
+    counter = state.get("tool_call_counter", {})
+    listing_ids = [
+        item.get("listing_id")
+        for item in state.get("listings", [])
+        if item.get("listing_id")
+    ]
+
+    listing_ids.extend(
+        re.findall(r"listing_\d+", request_text.lower())
+    )
+
+    if not listing_ids:
+        for item in state.get("memory_context", []):
+            text = str(item)
+            listing_ids.extend(re.findall(r"listing_\d+", text.lower()))
+
+    if not listing_ids:
+        search_result = await call_mcp_tool(
+            "search_listings",
+            {"limit": 3},
+        )
+
+        counter["property_finder"] = (
+            counter.get("property_finder", 0) + 1
+        )
+
+        event(
+            state["trace_id"],
+            "tool_call",
+            agent="listing_action",
+            tool="search_listings",
+            protocol="mcp",
+            input={"limit": 3},
+            output=search_result,
+        )
+
+        listing_ids = [
+            item.get("listing_id")
+            for item in search_result.get("results", [])
+            if item.get("listing_id")
+        ]
+
+    fetched = []
+
+    for listing_id in listing_ids[:3]:
+        if counter.get("listing_action", 0) >= 3:
+            break
+
+        result = await call_mcp_tool(
+            "fetch_listing",
+            {"listing_id": listing_id},
+        )
+
+        counter["listing_action"] = (
+            counter.get("listing_action", 0) + 1
+        )
+
+        event(
+            state["trace_id"],
+            "tool_call",
+            agent="listing_action",
+            tool="fetch_listing",
+            protocol="mcp",
+            input={"listing_id": listing_id},
+            output=result,
+        )
+
+        if "error" not in result:
+            fetched.append(result)
+
+    return {
+        "retrieved": state.get("retrieved", []),
+        "listings": fetched,
+        "tool_call_counter": counter,
+        "step_count": increment_step(state),
+    }
+
+
+async def scheduling_node(state):
+    request_text = state["request_text"]
+    counter = state.get("tool_call_counter", {})
+
+    listing_match = re.search(
+        r"listing_\d+",
+        request_text.lower(),
+    )
+    time_match = re.search(
+        r"\b(?:at\s+)?(\d{1,2}:\d{2})\b",
+        request_text.lower(),
+    )
+    date_match = re.search(
+        r"\b(today|tomorrow|\d{4}-\d{2}-\d{2})\b",
+        request_text.lower(),
+    )
+
+    if not listing_match:
+        return {
+            "draft": "Unable to schedule a viewing without a listing ID.",
+            "tool_call_counter": counter,
+            "step_count": increment_step(state),
+        }
+
+    if not time_match or not date_match:
+        return {
+            "draft": (
+                "Unable to schedule the viewing because the date "
+                "or time was not specified clearly."
+            ),
+            "tool_call_counter": counter,
+            "step_count": increment_step(state),
+        }
+
+    if counter.get("scheduling", 0) >= 1:
+        return {
+            "draft": "Viewing scheduling could not be completed.",
+            "tool_call_counter": counter,
+            "step_count": increment_step(state),
+        }
+
+    arguments = {
+        "listing_id": listing_match.group(0),
+        "client_id": state.get("client_id") or "unknown",
+        "date": date_match.group(1),
+        "time": time_match.group(1),
+    }
+
+    result = await call_mcp_tool(
+        "schedule_viewing",
+        arguments,
+    )
+
+    counter["scheduling"] = counter.get("scheduling", 0) + 1
+
+    event(
+        state["trace_id"],
+        "tool_call",
+        agent="scheduling",
+        tool="schedule_viewing",
+        protocol="mcp",
+        input=arguments,
+        output=result,
+    )
+
+    if result.get("status") != "scheduled":
+        draft = "The viewing could not be scheduled."
+    else:
+        draft = (
+            f"Viewing scheduled for {result['listing_id']} "
+            f"for {result['date']} at {result['time']}. "
+            f"Reference: {result['reference']}."
+        )
+
+    return {
+        "draft": draft,
+        "scheduled_viewing": result,
+        "tool_call_counter": counter,
+        "step_count": increment_step(state),
+    }
+
+
 def comms_node(state):
     language = comms_agent.detect_language(
         state["request_text"]
@@ -454,10 +619,10 @@ def route_after_memory(state):
         return "mortgage_analyst"
 
     if "communication" in intents:
-        return "comms"
+        return "listing_action"
 
     if "scheduling" in intents:
-        return "comms"
+        return "scheduling"
 
     return "fallback"
 
@@ -478,10 +643,10 @@ def route_after_property(state):
         return "mortgage_analyst"
 
     if "communication" in intents:
-        return "comms"
+        return "listing_action"
 
     if "scheduling" in intents:
-        return "comms"
+        return "scheduling"
 
     return "property_result"
 
@@ -491,7 +656,7 @@ def route_after_mortgage(state):
         return "fallback"
 
     if "communication" in state.get("intents", []):
-        return "comms"
+        return "listing_action"
 
     return "mortgage_result"
 
@@ -559,6 +724,16 @@ def build_graph():
     )
 
     graph.add_node(
+        "listing_action",
+        listing_action_node,
+    )
+
+    graph.add_node(
+        "scheduling",
+        scheduling_node,
+    )
+
+    graph.add_node(
         "property_result",
         property_result_node,
     )
@@ -592,8 +767,9 @@ def build_graph():
         {
             "property_finder": "property_finder",
             "mortgage_analyst": "mortgage_analyst",
+            "listing_action": "listing_action",
+            "scheduling": "scheduling",
             "comms": "comms",
-            "scheduling": "comms",
             "fallback": "fallback",
         },
     )
@@ -618,6 +794,16 @@ def build_graph():
             "property_result": "property_result",
             "fallback": "fallback",
         },
+    )
+
+    graph.add_edge(
+        "listing_action",
+        "comms",
+    )
+
+    graph.add_edge(
+        "scheduling",
+        "hil",
     )
 
     graph.add_conditional_edges(
