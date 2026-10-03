@@ -215,4 +215,22 @@ class MemoryStore:
         return count
 
 
+def build_memory_entries(request_text, intents):
+    entries = [
+        f"Episodic conversation summary: {request_text}"
+    ]
+
+    if "property_search" in intents:
+        entries.append(
+            f"Client preferences: {request_text}"
+        )
+
+    if "scheduling" in intents:
+        entries.append(
+            f"Ongoing deal: {request_text}"
+        )
+
+    return entries
+
+
 memory = MemoryStore()
