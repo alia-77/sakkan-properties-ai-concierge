@@ -1,9 +1,16 @@
 import chainlit as cl
 
 from src.agents import triage_agent
-from src.memory import memory
+from src.memory import build_memory_entries, memory
 from src.observability import event, new_trace_id
 from src.orchestrator import run_concierge
+
+
+def should_save_memory(client_id, hil_decision):
+    return bool(
+        client_id
+        and hil_decision in {"approve", "edit"}
+    )
 
 
 async def broker_approval(
@@ -12,52 +19,6 @@ async def broker_approval(
     client_id,
     client_name,
 ):
-    if client_id:
-        consent_response = await cl.AskActionMessage(
-            content=(
-                f"Allow saving this request to "
-                f"{client_name or client_id}'s memory?"
-            ),
-            actions=[
-                cl.Action(
-                    name="yes",
-                    payload={"value": "yes"},
-                    label="Yes",
-                ),
-                cl.Action(
-                    name="no",
-                    payload={"value": "no"},
-                    label="No",
-                ),
-            ],
-            timeout=300,
-        ).send()
-
-        consent = bool(
-            consent_response
-            and consent_response.get(
-                "payload",
-                {},
-            ).get(
-                "value"
-            )
-            == "yes"
-        )
-
-        if consent:
-            memory.add(
-                client_id,
-                f"Episodic request: {draft}",
-                True,
-                trace_id,
-            )
-        else:
-            event(
-                trace_id,
-                "memory_write_blocked",
-                client_id=client_id,
-            )
-
     event(
         trace_id,
         "hil_requested",
@@ -184,6 +145,56 @@ async def main(message: cl.Message):
         client_name=client_name,
         approve_callback=approval_callback,
     )
+
+    if should_save_memory(
+        client_id,
+        result.get("hil_decision"),
+    ):
+        consent_response = await cl.AskActionMessage(
+            content=(
+                f"Allow saving this request to "
+                f"{client_name or client_id}'s memory?"
+            ),
+            actions=[
+                cl.Action(
+                    name="yes",
+                    payload={"value": "yes"},
+                    label="Yes",
+                ),
+                cl.Action(
+                    name="no",
+                    payload={"value": "no"},
+                    label="No",
+                ),
+            ],
+            timeout=300,
+        ).send()
+
+        consent = bool(
+            consent_response
+            and consent_response.get(
+                "payload",
+                {},
+            ).get("value") == "yes"
+        )
+
+        if consent:
+            for entry in build_memory_entries(
+                message.content,
+                result.get("intents", []),
+            ):
+                memory.add(
+                    client_id,
+                    entry,
+                    True,
+                    trace_id,
+                )
+        else:
+            event(
+                trace_id,
+                "memory_write_blocked",
+                client_id=client_id,
+            )
 
     async with cl.Step(
         name="Triage",
